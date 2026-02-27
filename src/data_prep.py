@@ -71,7 +71,20 @@ def encode_industries(df, column='INDUSTRY', max_cats=10):
     
     # Fit-Transform and create DataFrame
     encoded_array = encoder.fit_transform(series.to_frame())
-    feature_names = [f"IND_{c.split('_')[-1]}" for c in encoder.get_feature_names_out([column])]
+    
+    # Build clean column names from encoder categories.
+    # encoder.get_feature_names_out() returns strings like "INDUSTRY_TECH",
+    # "INDUSTRY_infrequent_sklearn" etc. We extract the part after the first underscore
+    # and prefix with IND_ — but guard against the sklearn infrequent sentinel
+    # ('infrequent_sklearn') by replacing it with 'OTHER'.
+    raw_names = encoder.get_feature_names_out([column])
+    feature_names = []
+    for raw in raw_names:
+        # raw looks like "INDUSTRY_TECH" or "INDUSTRY_infrequent_sklearn"
+        suffix = raw.split(f"{column}_", 1)[-1]          # e.g. "TECH" or "infrequent_sklearn"
+        suffix = suffix.replace("infrequent_sklearn", "OTHER")   # clean the sklearn artifact
+        suffix = suffix.upper().replace(" ", "_")
+        feature_names.append(f"IND_{suffix}")
     
     ohe_df = pd.DataFrame(
         encoded_array, 
