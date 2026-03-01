@@ -4,6 +4,42 @@
 
 This project implements a production-ready ML pipeline to predict which free-tier (non-customer) companies are likely to convert to paying customers within the next 30 days. The model generates a weekly prioritised list of leads for Sales & CS teams, enriched with SHAP-derived explanations and GPT-4o-generated action briefs.
 
+```mermaid
+graph TD
+    %% Styling
+    classDef data fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
+    classDef process fill:#fff3e0,stroke:#e65100,stroke-width:2px;
+    classDef model fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px;
+    classDef output fill:#f3e5f5,stroke:#4a148c,stroke-width:2px;
+
+    %% Nodes
+    subgraph Data_Ingestion [Data Ingestion]
+        direction TB
+        Raw[Raw CSVs<br/>(Customers, Usage)]:::data --> Clean[Data Cleaning<br/>& Prep]:::process
+        Clean --> Features[Feature Engineering<br/>(Point-in-Time Rolling Windows)]:::process
+    end
+
+    subgraph Modeling_Pipeline [Modeling Pipeline (Per Fold)]
+        direction TB
+        Features --> Split[Train/Test Split<br/>(Leakage Safe)]:::process
+        Split --> RFE[Feature Selection<br/>(RFE)]:::process
+        RFE --> Models[Train Models<br/>(RF, LGBM, LogReg)]:::model
+        Models --> Ensemble[Metamodel Ensemble<br/>(Soft Voting)]:::model
+    end
+
+    subgraph Evaluation_Output [Evaluation & Output]
+        direction TB
+        Ensemble --> Metrics[Calculate Metrics<br/>(ROC, Precision@K)]:::output
+        Ensemble --> SHAP[SHAP Explainability<br/>(Top Drivers)]:::output
+        SHAP --> LLM[LLM Sales Briefs<br/>(GPT-4o-mini)]:::output
+        LLM --> Report[Final Lead List<br/>(CSV)]:::output
+    end
+
+    %% Connections
+    Data_Ingestion --> Modeling_Pipeline
+    Modeling_Pipeline --> Evaluation_Output
+```
+
 ## Objective
 
 **Problem:** Identify high-potential free-tier portals likely to upgrade to a paid plan within 30 days.  
