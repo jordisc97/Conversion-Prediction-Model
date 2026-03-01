@@ -1,5 +1,4 @@
 import pandas as pd
-from sklearn.preprocessing import OneHotEncoder
 
 def missing_summary(df, name):
     """
@@ -30,10 +29,10 @@ def missing_summary(df, name):
     print(out.to_string(index=False))
 
 
-def encode_industries(df, column='INDUSTRY', max_cats=10):
+def clean_industry_column(df, column='INDUSTRY'):
     """
-    Improved industry encoder with refined regex, standardized naming, 
-    and robust error handling.
+    Cleans and normalizes the industry column with refined regex and standardized naming.
+    Does NOT perform One-Hot Encoding to avoid data leakage.
     """
     # 1. Cleaning & Normalization
     # Replace separators with spaces to help regex find word boundaries
@@ -62,34 +61,7 @@ def encode_industries(df, column='INDUSTRY', max_cats=10):
     for pattern, label in mapping.items():
         series = series.replace(pattern, label, regex=True)
     
-    # 3. One-Hot Encoding
-    encoder = OneHotEncoder(
-        max_categories=max_cats,
-        handle_unknown='infrequent_if_exist',
-        sparse_output=False
-    )
-    
-    # Fit-Transform and create DataFrame
-    encoded_array = encoder.fit_transform(series.to_frame())
-    
-    # Build clean column names from encoder categories.
-    # encoder.get_feature_names_out() returns strings like "INDUSTRY_TECH",
-    # "INDUSTRY_infrequent_sklearn" etc. We extract the part after the first underscore
-    # and prefix with IND_ — but guard against the sklearn infrequent sentinel
-    # ('infrequent_sklearn') by replacing it with 'OTHER'.
-    raw_names = encoder.get_feature_names_out([column])
-    feature_names = []
-    for raw in raw_names:
-        # raw looks like "INDUSTRY_TECH" or "INDUSTRY_infrequent_sklearn"
-        suffix = raw.split(f"{column}_", 1)[-1]          # e.g. "TECH" or "infrequent_sklearn"
-        suffix = suffix.replace("infrequent_sklearn", "OTHER")   # clean the sklearn artifact
-        suffix = suffix.upper().replace(" ", "_")
-        feature_names.append(f"IND_{suffix}")
-    
-    ohe_df = pd.DataFrame(
-        encoded_array, 
-        columns=feature_names, 
-        index=df.index
-    ).astype(int)
-    
-    return pd.concat([df, ohe_df], axis=1)
+    # Return modified dataframe
+    df = df.copy()
+    df[column] = series
+    return df
