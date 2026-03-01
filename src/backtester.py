@@ -220,7 +220,6 @@ class PropensityBacktester(EvaluationMixin, ExplainabilityMixin):
             return RFE(
                 estimator=rfe_estimator,
                 n_features_to_select=target_features,
-                random_state=42,
             ).set_output(transform="pandas")
 
         rf_pipe = Pipeline([
