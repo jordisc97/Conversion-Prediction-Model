@@ -106,10 +106,14 @@ signal_3: Broad multi-module adoption (SHAP: +0.112)
 
 ```
 .
-├── data/                   # Raw data files (not included in repo)
+├── data/                   # Raw data files
+│   ├── customers.csv
+│   ├── noncustomers.csv
+│   └── usage_actions.csv
 ├── reports/                # Generated reports and lead lists
 │   ├── company_comparison.html
-│   └── usage_comparison.html
+│   ├── usage_comparison.html
+│   └── sales_call_list_2020-07-27.csv
 ├── src/                    # Source code
 │   ├── backtester.py       # Core backtesting engine + ensemble pipelines
 │   ├── data_prep.py        # Data cleaning, industry normalisation, missing value audit
@@ -118,6 +122,7 @@ signal_3: Broad multi-module adoption (SHAP: +0.112)
 │   ├── features.py         # VectorizedUsageFeatureBacktester: point-in-time feature panel
 │   ├── llm_intelligence.py # SalesIntelligenceAgent: GPT-4o action briefs
 │   └── main_notebook.ipynb # Main analysis and execution notebook
+├── requirements.txt        # Project dependencies
 └── README.md               # This file
 ```
 
@@ -127,7 +132,7 @@ signal_3: Broad multi-module adoption (SHAP: +0.112)
 
 1. **Setup Environment:**
    ```bash
-   pip install pandas numpy scikit-learn lightgbm matplotlib shap openai ydata-profiling
+   pip install -r requirements.txt
    ```
 
 2. **Run the Analysis:**
