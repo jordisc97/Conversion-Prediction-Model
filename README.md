@@ -13,26 +13,26 @@ graph TD
     classDef output fill:#f3e5f5,stroke:#4a148c,stroke-width:2px;
 
     %% Nodes
-    subgraph Data_Ingestion [Data Ingestion]
+    subgraph Data_Ingestion ["Data Ingestion"]
         direction TB
-        Raw[Raw CSVs<br/>(Customers, Usage)]:::data --> Clean[Data Cleaning<br/>& Prep]:::process
-        Clean --> Features[Feature Engineering<br/>(Point-in-Time Rolling Windows)]:::process
+        Raw["Raw CSVs<br/>(Customers, Usage)"]:::data --> Clean["Data Cleaning<br/>& Prep"]:::process
+        Clean --> Features["Feature Engineering<br/>(Point-in-Time Rolling Windows)"]:::process
     end
 
-    subgraph Modeling_Pipeline [Modeling Pipeline (Per Fold)]
+    subgraph Modeling_Pipeline ["Modeling Pipeline (Per Fold)"]
         direction TB
-        Features --> Split[Train/Test Split<br/>(Leakage Safe)]:::process
-        Split --> RFE[Feature Selection<br/>(RFE)]:::process
-        RFE --> Models[Train Models<br/>(RF, LGBM, LogReg)]:::model
-        Models --> Ensemble[Metamodel Ensemble<br/>(Soft Voting)]:::model
+        Features --> Split["Train/Test Split<br/>(Leakage Safe)"]:::process
+        Split --> RFE["Feature Selection<br/>(RFE)"]:::process
+        RFE --> Models["Train Models<br/>(RF, LGBM, LogReg)"]:::model
+        Models --> Ensemble["Metamodel Ensemble<br/>(Soft Voting)"]:::model
     end
 
-    subgraph Evaluation_Output [Evaluation & Output]
+    subgraph Evaluation_Output ["Evaluation & Output"]
         direction TB
-        Ensemble --> Metrics[Calculate Metrics<br/>(ROC, Precision@K)]:::output
-        Ensemble --> SHAP[SHAP Explainability<br/>(Top Drivers)]:::output
-        SHAP --> LLM[LLM Sales Briefs<br/>(GPT-4o-mini)]:::output
-        LLM --> Report[Final Lead List<br/>(CSV)]:::output
+        Ensemble --> Metrics["Calculate Metrics<br/>(ROC, Precision@K)"]:::output
+        Ensemble --> SHAP["SHAP Explainability<br/>(Top Drivers)"]:::output
+        SHAP --> LLM["LLM Sales Briefs<br/>(GPT-4o-mini)"]:::output
+        LLM --> Report["Final Lead List<br/>(CSV)"]:::output
     end
 
     %% Connections
