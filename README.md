@@ -5,40 +5,76 @@
 This project implements a production-ready ML pipeline to predict which free-tier (non-customer) companies are likely to convert to paying customers within the next 30 days. The model generates a weekly prioritised list of leads for Sales & CS teams, enriched with SHAP-derived explanations and GPT-4o-generated action briefs.
 
 ```mermaid
-graph TD
-    %% Styling
-    classDef data fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
-    classDef process fill:#fff3e0,stroke:#e65100,stroke-width:2px;
-    classDef model fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px;
-    classDef output fill:#f3e5f5,stroke:#4a148c,stroke-width:2px;
+%%{init: {'theme': 'base', 'themeVariables': {'edgeLabelBackground': 'transparent', 'clusterBkg': '#1e293b', 'clusterBorder': '#475569', 'titleColor': '#ffffff', 'edgeStrokeColor': '#ffffff', 'lineColor': '#ffffff'}}}%%
+flowchart TB
+    classDef data     fill:#1d4ed8,stroke:#93c5fd,stroke-width:2px,color:#ffffff
+    classDef process  fill:#b45309,stroke:#fcd34d,stroke-width:2px,color:#ffffff
+    classDef model    fill:#047857,stroke:#6ee7b7,stroke-width:2px,color:#ffffff
+    classDef ensemble fill:#065f46,stroke:#34d399,stroke-width:3px,color:#ffffff,font-weight:bold
+    classDef output   fill:#6d28d9,stroke:#c4b5fd,stroke-width:2px,color:#ffffff
+    classDef report   fill:#9d174d,stroke:#f9a8d4,stroke-width:3px,color:#ffffff,font-weight:bold
 
-    %% Nodes
-    subgraph Data_Ingestion ["Data Ingestion"]
-        direction TB
-        Raw["Raw CSVs<br/>(Customers, Usage)"]:::data --> Clean["Data Cleaning<br/>& Prep"]:::process
-        Clean --> Features["Feature Engineering<br/>(Point-in-Time Rolling Windows)"]:::process
+    %% ── INGESTION ──────────────────────────────────────
+    subgraph ING ["① Data Ingestion"]
+        A1["📂 Raw CSVs — customers · usage"]:::data
+        A2["🧹 Clean & Normalise — data_prep.py"]:::process
+        A1 --> A2
     end
 
-    subgraph Modeling_Pipeline ["Modeling Pipeline (Per Fold)"]
-        direction TB
-        Features --> Split["Train/Test Split<br/>(Leakage Safe)"]:::process
-        Split --> RFE["Feature Selection<br/>(RFE)"]:::process
-        RFE --> Models["Train Models<br/>(RF, LGBM, LogReg)"]:::model
-        Models --> Ensemble["Metamodel Ensemble<br/>(Soft Voting)"]:::model
+    %% ── FEATURE ENGINEERING ────────────────────────────
+    subgraph FE ["② Feature Engineering — features.py"]
+        F1["⏱️ Windowed Behavior — 7d to 60d rolling sums/users for CRM & Email"]:::process
+        F2["📊 Firmographic Scaling — Log Alexa Rank · Employee midpoint mapping"]:::process
+        F3["🛠️ Quality Handling — Null sentinels · Median size imputation"]:::process
+        F4["🎯 Target Labeling — 90-day recency window to avoid mature bias"]:::process
+        A2 --> F1 & F2
+        F1 & F2 --> F3
+        F3 --> F4
     end
 
-    subgraph Evaluation_Output ["Evaluation & Output"]
-        direction TB
-        Ensemble --> Metrics["Calculate Metrics<br/>(ROC, Precision@K)"]:::output
-        Ensemble --> SHAP["SHAP Explainability<br/>(Top Drivers)"]:::output
-        SHAP --> LLM["LLM Sales Briefs<br/>(GPT-4o-mini)"]:::output
-        LLM --> Report["Final Lead List<br/>(CSV)"]:::output
+    %% ── BACKTESTING ────────────────────────────────────
+    subgraph BT ["③ Backtest · ×6 Monthly Folds · Feb–Jul 2020"]
+        B1["📅 Leakage-Safe Split — Sequential time-based validation"]:::process
+        B2["🔍 RFE Selection — Top 30 features per fold"]:::process
+        B3["🌲 Random Forest — 200 trees"]:::model
+        B4["⚡ LightGBM — 200 trees · lr 0.05"]:::model
+        B5["📐 Logistic Regression — L2 · balanced"]:::model
+        B6["🎯 Metamodel — Soft-Voting Ensemble"]:::ensemble
+        F4 --> B1
+        B1 --> B2
+        B2 --> B3 & B4 & B5
+        B3 & B4 & B5 --> B6
     end
 
-    %% Connections
-    Data_Ingestion --> Modeling_Pipeline
-    Modeling_Pipeline --> Evaluation_Output
+    %% ── EVALUATION ─────────────────────────────────────
+    subgraph EV ["④ Evaluation"]
+        C1["📊 Ranking Metrics — ROC-AUC 0.81 · PR-AUC · P@10 · R@10"]:::output
+        C2["📈 Baselines — Random · Activity Heuristic"]:::output
+        C3["🔔 Distribution Drift Check — PSI per fold"]:::output
+    end
+
+    %% ── EXPLAINABILITY ──────────────────────────────────
+    subgraph XP ["⑤ Explainability"]
+        D1["🔬 SHAP Values — computed per test company"]:::output
+        D2["📝 Top-3 Signals per lead — beeswarm · waterfall"]:::output
+        D1 --> D2
+    end
+
+    %% ── SALES OUTPUT ────────────────────────────────────
+    subgraph SO ["⑥ Sales Output"]
+        E1["🤖 GPT-4o-mini Sales Briefs — llm_intelligence.py"]:::output
+        E2["🏆 Weekly Top-10 Lead List — CSV export"]:::report
+        E1 --> E2
+    end
+
+    %% ── MAIN FLOW ───────────────────────────────────────
+    ING --> FE
+    FE  --> BT
+    BT  --> EV
+    BT  --> XP
+    XP  --> SO
 ```
+
 
 ## Objective
 
