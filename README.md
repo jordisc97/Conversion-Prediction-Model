@@ -4,6 +4,7 @@
 
 This project implements a production-ready ML pipeline to predict which free-tier (non-customer) companies are likely to convert to paying customers within the next 30 days. The model generates a weekly prioritised list of leads for Sales & CS teams, enriched with SHAP-derived explanations and GPT-4o-generated action briefs.
 
+```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'edgeLabelBackground': 'transparent', 'clusterBkg': '#1e293b', 'clusterBorder': '#475569', 'titleColor': '#ffffff', 'edgeStrokeColor': '#ffffff', 'lineColor': '#ffffff'}}}%%
 flowchart TB
     classDef data     fill:#1d4ed8,stroke:#93c5fd,stroke-width:2px,color:#ffffff
@@ -72,6 +73,7 @@ flowchart TB
     BT  --> EV
     BT  --> XP
     XP  --> SO
+```
 
 
 ## Objective
