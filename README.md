@@ -2,6 +2,8 @@
 
 ## Project Overview
 
+**[View the Presentation (HubSpot Landing Page)](https://147891000.hs-sites-eu1.com/en-us/predict-free-tier-hubspot-conversions-with-proven-machine-learning-hubspot-conversion-predictor)**
+
 This project implements a production-ready ML pipeline to predict which free-tier (non-customer) companies are likely to convert to paying customers within the next 30 days. The model generates a weekly prioritised list of leads for Sales & CS teams, enriched with SHAP-derived explanations and GPT-4o-generated action briefs.
 
 ```mermaid
@@ -85,14 +87,31 @@ flowchart TB
 
 ## Key Results
 
-| Metric | Metamodel Average | Peak (Jun-20) |
-|---|---|---|
-| ROC-AUC | 0.81 | 0.90 |
-| PR-AUC | 0.18 | 0.37 |
-| Precision@10 | 0.23 | 0.40 |
-| Recall@10 | 0.21 | 0.38 |
+### Backtesting Results
 
-**Baseline prevalence is ~1.5%** (8–17 conversions per ~1,000 free portals per month). A random list would yield ~1–2 hits per 10 leads. The Metamodel averages ~2–3 hits, with peaks of 4 — a meaningful signal given the noise floor.
+| Date | n pos | ROC-AUC (RF) | ROC-AUC (LR) | ROC-AUC (LGBM) | ROC-AUC (Meta) | PR-AUC (RF) | PR-AUC (LR) | PR-AUC (LGBM) | PR-AUC (Meta) | P@10 (RF) | P@10 (LR) | P@10 (LGBM) | P@10 (Meta) | R@10 (RF) | R@10 (LR) | R@10 (LGBM) | R@10 (Meta) |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2020-02-24 | 8 | 0.84 | 0.87 | 0.79 | 0.90 | 0.06 | 0.05 | 0.34 | 0.39 | 0.10 | 0.10 | 0.30 | 0.30 | 0.12 | 0.12 | 0.38 | 0.38 |
+| 2020-03-23 | 9 | 0.85 | 0.87 | 0.68 | 0.85 | 0.03 | 0.03 | 0.10 | 0.22 | 0.00 | 0.00 | 0.10 | 0.30 | 0.00 | 0.00 | 0.11 | 0.33 |
+| 2020-04-27 | 9 | 0.68 | 0.82 | 0.54 | 0.78 | 0.01 | 0.02 | 0.06 | 0.12 | 0.00 | 0.10 | 0.10 | 0.10 | 0.00 | 0.11 | 0.11 | 0.11 |
+| 2020-05-25 | 12 | 0.64 | 0.79 | 0.48 | 0.70 | 0.01 | 0.01 | 0.03 | 0.10 | 0.00 | 0.00 | 0.20 | 0.10 | 0.00 | 0.00 | 0.17 | 0.08 |
+| 2020-06-22 | 17 | 0.73 | 0.73 | 0.68 | 0.67 | 0.06 | 0.11 | 0.28 | 0.25 | 0.10 | 0.20 | 0.40 | 0.40 | 0.06 | 0.12 | 0.24 | 0.24 |
+| 2020-07-27 | 12 | 0.82 | 0.81 | 0.76 | 0.82 | 0.14 | 0.02 | 0.18 | 0.19 | 0.20 | 0.00 | 0.30 | 0.30 | 0.17 | 0.00 | 0.25 | 0.25 |
+| **AVERAGE** | — | **0.76** | **0.82** | **0.66** | **0.79** | **0.05** | **0.04** | **0.17** | **0.21** | **0.07** | **0.07** | **0.23** | **0.25** | **0.06** | **0.06** | **0.21** | **0.23** |
+
+### Baseline vs. Metamodel Comparison
+
+| Cutoff | Prevalence | Random P@10 | Activity Heuristic P@10 | Metamodel P@10 | Lift vs Activity |
+|---|---|---|---|---|---|
+| 2020-02-24 | 0.16% | 0.00 | 0.10 | 0.30 | 3.0× |
+| 2020-03-23 | 0.18% | 0.00 | 0.00 | 0.30 | ∞ |
+| 2020-04-27 | 0.18% | 0.00 | 0.00 | 0.10 | ∞ |
+| 2020-05-25 | 0.24% | 0.00 | 0.00 | 0.10 | ∞ |
+| 2020-06-22 | 0.34% | 0.00 | 0.10 | 0.40 | 4.0× |
+| 2020-07-27 | 0.24% | 0.00 | 0.10 | 0.30 | 3.0× |
+| **AVERAGE** | — | **0.00** | **0.05** | **0.25** | **5.0×** |
+
+**Average Metamodel P@10 = 0.25** — **5.0× better than the activity heuristic.** In plain terms: if reps call the top 10 leads each Sunday, they will reach a true converter 2–3 times on average (maxing at 4). Without the model: essentially zero based on random selection, or 0–1 based on the activity heuristic.
 
 > **Important caveat:** With 8–17 test positives per fold, point estimates carry wide confidence intervals. Bootstrap CIs should be reported before presenting results to stakeholders as definitive.
 
