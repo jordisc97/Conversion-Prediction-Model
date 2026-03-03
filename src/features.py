@@ -118,6 +118,14 @@ class VectorizedUsageFeatureBacktester:
                     f[f"{col.lower()}_sum_{name}"] / total
                 ).fillna(0)
 
+            # actions per user: intensity of module usage relative to user volume
+            # Total actions / (total user + epsilon)
+            total_users = f[f"users_sum_{name}"]
+            for col in self.action_cols:
+                f[f"{col.lower()}_per_user_{name}"] = (
+                    f[f"{col.lower()}_sum_{name}"] / (total_users + 1)
+                )
+
             frames.append(f)
 
         return pd.concat(frames, axis=1).reset_index()

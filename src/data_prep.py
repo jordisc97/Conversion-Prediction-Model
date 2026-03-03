@@ -1,4 +1,6 @@
 import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
 
 def missing_summary(df, name):
     """
@@ -64,4 +66,107 @@ def clean_industry_column(df, column='INDUSTRY'):
     # Return modified dataframe
     df = df.copy()
     df[column] = series
+    return df
+
+
+def plot_column_distribution(df, column, log_scale=False, bins=50, figsize=(8, 4), clip_quantile=None):
+    """
+    Plot distribution of a dataframe column.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+    column : str
+    log_scale : bool
+        Apply log1p transform (recommended for skewed counts)
+    bins : int
+    figsize : tuple
+    clip_quantile : float or None
+        If set (e.g., 0.99), clips extreme tail for better visibility
+    """
+
+    if column not in df.columns:
+        raise ValueError(f"{column} not in dataframe")
+
+    series = df[column].dropna()
+
+    plt.figure(figsize=figsize)
+
+    # Handle datetime separately
+    if np.issubdtype(series.dtype, np.datetime64):
+        series.hist(bins=50)
+        plt.xlabel(column)
+        plt.ylabel("Frequency")
+        plt.title(f"Distribution of {column}")
+        plt.show()
+        return
+
+    # Optional clipping for visualization only
+    if clip_quantile is not None:
+        upper = series.quantile(clip_quantile)
+        series = series.clip(upper=upper)
+
+    # Optional log transform
+    if log_scale:
+        series = np.log1p(series)
+        title_suffix = " (log1p)"
+    else:
+        title_suffix = ""
+
+    plt.hist(series, bins=bins)
+    plt.xlabel(column)
+    plt.ylabel("Frequency")
+    plt.title(f"Distribution of {column}{title_suffix}")
+    plt.show()
+
+
+def cap_outliers(df, columns, method="iqr", iqr_multiplier=1.5, lower_pct=0.00, upper_pct=0.99, return_bounds=False):
+    """
+    Cap extreme values in specified columns.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+    columns : list
+        Columns to cap
+    method : str
+        "iqr" or "percentile"
+    iqr_multiplier : float
+        Sensitivity for IQR method
+    lower_pct, upper_pct : float
+        Used if method="percentile"
+    return_bounds : bool
+        Return cap thresholds
+
+    Returns
+    -------
+    capped_df (and optionally bounds dict)
+    """
+
+    df = df.copy()
+    bounds = {}
+
+    for col in columns:
+
+        if method == "iqr":
+            q1 = df[col].quantile(0.25)
+            q3 = df[col].quantile(0.75)
+            iqr = q3 - q1
+
+            lower = q1 - iqr_multiplier * iqr
+            upper = q3 + iqr_multiplier * iqr
+
+        elif method == "percentile":
+            lower = df[col].quantile(lower_pct)
+            upper = df[col].quantile(upper_pct)
+
+        else:
+            raise ValueError("method must be 'iqr' or 'percentile'")
+
+        df[col] = df[col].clip(lower=lower, upper=upper)
+        bounds[col] = (lower, upper)
+
+    if return_bounds:
+        return df, bounds
+
     return df
