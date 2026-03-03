@@ -6,7 +6,7 @@ This project implements a production-ready ML pipeline to predict which free-tie
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'edgeLabelBackground': 'transparent', 'clusterBkg': '#1e293b', 'clusterBorder': '#475569', 'titleColor': '#ffffff'}}}%%
-flowchart LR
+flowchart TB
     classDef data     fill:#1d4ed8,stroke:#93c5fd,stroke-width:2px,color:#ffffff
     classDef process  fill:#b45309,stroke:#fcd34d,stroke-width:2px,color:#ffffff
     classDef model    fill:#047857,stroke:#6ee7b7,stroke-width:2px,color:#ffffff
@@ -15,53 +15,44 @@ flowchart LR
     classDef report   fill:#9d174d,stroke:#f9a8d4,stroke-width:3px,color:#ffffff,font-weight:bold
 
     %% ── INGESTION ──────────────────────────────────────
-    subgraph ING ["  ① Data Ingestion  "]
-        direction TB
-        A1["📂 Raw CSVs\ncustomers · usage"]:::data
-        A2["🧹 Clean & Normalise\ndata_prep.py"]:::process
-        A3["⚙️ Point-in-Time Features\nfeatures.py"]:::process
+    subgraph ING ["① Data Ingestion"]
+        A1["📂 Raw CSVs — customers · usage"]:::data
+        A2["🧹 Clean & Normalise — data_prep.py"]:::process
+        A3["⚙️ Point-in-Time Feature Engineering — features.py"]:::process
         A1 --> A2 --> A3
     end
 
     %% ── BACKTESTING ────────────────────────────────────
-    subgraph BT ["  ② Backtest · ×6 Folds · Feb–Jul 2020  "]
-        direction TB
-        B1["📅 Train/Test Split\n90-day positive window"]:::process
-        B2["🔍 RFE Selection\n30 features per fold"]:::process
-        B3["🌲 Random Forest\n200 trees"]:::model
-        B4["⚡ LightGBM\n200 trees · lr 0.05"]:::model
-        B5["📐 Logistic Regression\nL2 · balanced"]:::model
-        B6["🎯 Metamodel\nSoft-Voting Ensemble"]:::ensemble
+    subgraph BT ["② Backtest · ×6 Monthly Folds · Feb–Jul 2020"]
+        B1["📅 Leakage-Safe Train/Test Split — 90-day positive window"]:::process
+        B2["🔍 RFE Feature Selection — 30 features per fold"]:::process
+        B3["🌲 Random Forest — 200 trees"]:::model
+        B4["⚡ LightGBM — 200 trees · lr 0.05"]:::model
+        B5["📐 Logistic Regression — L2 · balanced"]:::model
+        B6["🎯 Metamodel — Soft-Voting Ensemble"]:::ensemble
         B1 --> B2
-        B2 --> B3
-        B2 --> B4
-        B2 --> B5
-        B3 --> B6
-        B4 --> B6
-        B5 --> B6
+        B2 --> B3 & B4 & B5
+        B3 & B4 & B5 --> B6
     end
 
     %% ── EVALUATION ─────────────────────────────────────
-    subgraph EV ["  ③ Evaluation  "]
-        direction TB
-        C1["📊 Metrics\nROC-AUC 0.81 · PR-AUC\nP@10 · R@10"]:::output
-        C2["📈 Baselines\nRandom · Activity heuristic"]:::output
-        C3["🔔 Drift Check\nPSI per fold"]:::output
+    subgraph EV ["③ Evaluation"]
+        C1["📊 Ranking Metrics — ROC-AUC 0.81 · PR-AUC · P@10 · R@10"]:::output
+        C2["📈 Baselines — Random · Activity Heuristic"]:::output
+        C3["🔔 Distribution Drift Check — PSI per fold"]:::output
     end
 
     %% ── EXPLAINABILITY ──────────────────────────────────
-    subgraph XP ["  ④ Explainability  "]
-        direction TB
-        D1["🔬 SHAP Values\nper test company"]:::output
-        D2["📝 Top-3 Signals\nbeeswarm · waterfall"]:::output
+    subgraph XP ["④ Explainability"]
+        D1["🔬 SHAP Values — computed per test company"]:::output
+        D2["📝 Top-3 Signals per lead — beeswarm · waterfall"]:::output
         D1 --> D2
     end
 
     %% ── SALES OUTPUT ────────────────────────────────────
-    subgraph SO ["  ⑤ Sales Output  "]
-        direction TB
-        E1["🤖 GPT-4o-mini\nSales Briefs"]:::output
-        E2["🏆 Weekly Top-10\nLead List CSV"]:::report
+    subgraph SO ["⑤ Sales Output"]
+        E1["🤖 GPT-4o-mini Sales Briefs — llm_intelligence.py"]:::output
+        E2["🏆 Weekly Top-10 Lead List — CSV export"]:::report
         E1 --> E2
     end
 
