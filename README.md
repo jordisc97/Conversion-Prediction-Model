@@ -4,7 +4,6 @@
 
 This project implements a production-ready ML pipeline to predict which free-tier (non-customer) companies are likely to convert to paying customers within the next 30 days. The model generates a weekly prioritised list of leads for Sales & CS teams, enriched with SHAP-derived explanations and GPT-4o-generated action briefs.
 
-```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'edgeLabelBackground': 'transparent', 'clusterBkg': '#1e293b', 'clusterBorder': '#475569', 'titleColor': '#ffffff', 'edgeStrokeColor': '#ffffff', 'lineColor': '#ffffff'}}}%%
 flowchart TB
     classDef data     fill:#1d4ed8,stroke:#93c5fd,stroke-width:2px,color:#ffffff
@@ -18,50 +17,61 @@ flowchart TB
     subgraph ING ["① Data Ingestion"]
         A1["📂 Raw CSVs — customers · usage"]:::data
         A2["🧹 Clean & Normalise — data_prep.py"]:::process
-        A3["⚙️ Point-in-Time Feature Engineering — features.py"]:::process
-        A1 --> A2 --> A3
+        A1 --> A2
+    end
+
+    %% ── FEATURE ENGINEERING ────────────────────────────
+    subgraph FE ["② Feature Engineering — features.py"]
+        F1["⏱️ Windowed Behavior — 7d to 60d rolling sums/users for CRM & Email"]:::process
+        F2["📊 Firmographic Scaling — Log Alexa Rank · Employee midpoint mapping"]:::process
+        F3["🛠️ Quality Handling — Null sentinels · Median size imputation"]:::process
+        F4["🎯 Target Labeling — 90-day recency window to avoid mature bias"]:::process
+        A2 --> F1 & F2
+        F1 & F2 --> F3
+        F3 --> F4
     end
 
     %% ── BACKTESTING ────────────────────────────────────
-    subgraph BT ["② Backtest · ×6 Monthly Folds · Feb–Jul 2020"]
-        B1["📅 Leakage-Safe Train/Test Split — 90-day positive window"]:::process
-        B2["🔍 RFE Feature Selection — 30 features per fold"]:::process
+    subgraph BT ["③ Backtest · ×6 Monthly Folds · Feb–Jul 2020"]
+        B1["📅 Leakage-Safe Split — Sequential time-based validation"]:::process
+        B2["🔍 RFE Selection — Top 30 features per fold"]:::process
         B3["🌲 Random Forest — 200 trees"]:::model
         B4["⚡ LightGBM — 200 trees · lr 0.05"]:::model
         B5["📐 Logistic Regression — L2 · balanced"]:::model
         B6["🎯 Metamodel — Soft-Voting Ensemble"]:::ensemble
+        F4 --> B1
         B1 --> B2
         B2 --> B3 & B4 & B5
         B3 & B4 & B5 --> B6
     end
 
     %% ── EVALUATION ─────────────────────────────────────
-    subgraph EV ["③ Evaluation"]
+    subgraph EV ["④ Evaluation"]
         C1["📊 Ranking Metrics — ROC-AUC 0.81 · PR-AUC · P@10 · R@10"]:::output
         C2["📈 Baselines — Random · Activity Heuristic"]:::output
         C3["🔔 Distribution Drift Check — PSI per fold"]:::output
     end
 
     %% ── EXPLAINABILITY ──────────────────────────────────
-    subgraph XP ["④ Explainability"]
+    subgraph XP ["⑤ Explainability"]
         D1["🔬 SHAP Values — computed per test company"]:::output
         D2["📝 Top-3 Signals per lead — beeswarm · waterfall"]:::output
         D1 --> D2
     end
 
     %% ── SALES OUTPUT ────────────────────────────────────
-    subgraph SO ["⑤ Sales Output"]
+    subgraph SO ["⑥ Sales Output"]
         E1["🤖 GPT-4o-mini Sales Briefs — llm_intelligence.py"]:::output
         E2["🏆 Weekly Top-10 Lead List — CSV export"]:::report
         E1 --> E2
     end
 
     %% ── MAIN FLOW ───────────────────────────────────────
-    ING --> BT
+    ING --> FE
+    FE  --> BT
     BT  --> EV
     BT  --> XP
     XP  --> SO
-```
 
 
 ## Objective
