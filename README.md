@@ -7,74 +7,72 @@
 This project implements a production-ready ML pipeline to predict which free-tier (non-customer) companies are likely to convert to paying customers within the next 30 days. The model generates a weekly prioritised list of leads for Sales & CS teams, enriched with SHAP-derived explanations and GPT-4o-generated action briefs.
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'edgeLabelBackground': 'transparent', 'clusterBkg': '#1e293b', 'clusterBorder': '#475569', 'titleColor': '#ffffff', 'edgeStrokeColor': '#ffffff', 'lineColor': '#ffffff'}}}%%
+%%{init: {'theme': 'base', 'themeVariables': {'edgeLabelBackground': 'transparent', 'clusterBkg': '#0f172a', 'clusterBorder': '#334155', 'titleColor': '#f1f5f9', 'lineColor': '#94a3b8', 'fontSize': '15px'}}}%%
 flowchart TB
-    classDef data     fill:#1d4ed8,stroke:#93c5fd,stroke-width:2px,color:#ffffff
-    classDef process  fill:#b45309,stroke:#fcd34d,stroke-width:2px,color:#ffffff
-    classDef model    fill:#047857,stroke:#6ee7b7,stroke-width:2px,color:#ffffff
-    classDef ensemble fill:#065f46,stroke:#34d399,stroke-width:3px,color:#ffffff,font-weight:bold
-    classDef output   fill:#6d28d9,stroke:#c4b5fd,stroke-width:2px,color:#ffffff
-    classDef report   fill:#9d174d,stroke:#f9a8d4,stroke-width:3px,color:#ffffff,font-weight:bold
+    classDef data     fill:#1d4ed8,stroke:#93c5fd,stroke-width:2px,color:#fff
+    classDef process  fill:#b45309,stroke:#fcd34d,stroke-width:2px,color:#fff
+    classDef model    fill:#047857,stroke:#6ee7b7,stroke-width:2px,color:#fff
+    classDef ensemble fill:#065f46,stroke:#34d399,stroke-width:3px,color:#fff,font-weight:bold
+    classDef output   fill:#6d28d9,stroke:#c4b5fd,stroke-width:2px,color:#fff
+    classDef report   fill:#9d174d,stroke:#f9a8d4,stroke-width:3px,color:#fff,font-weight:bold
+    classDef monitor  fill:#1e3a5f,stroke:#60a5fa,stroke-width:2px,color:#fff
 
-    %% ── INGESTION ──────────────────────────────────────
-    subgraph ING ["① Data Ingestion"]
-        A1["📂 Raw CSVs — customers · usage"]:::data
-        A2["🧹 Clean & Normalise — data_prep.py"]:::process
+    %% ── 1. DATA ─────────────────────────────────
+    subgraph ING ["① Ingestion & EDA"]
+        direction TB
+        A1["📂 customers.csv · 200 records<br/>noncustomers.csv · 5k records<br/>usage_actions.csv · 25k events"]:::data
+        A2["🧹 Normalise · Parse Dates<br/>Null & Drift Analysis"]:::process
         A1 --> A2
     end
 
-    %% ── FEATURE ENGINEERING ────────────────────────────
-    subgraph FE ["② Feature Engineering — features.py"]
-        F1["⏱️ Windowed Behavior — 7d to 60d rolling sums/users for CRM & Email"]:::process
-        F2["📊 Firmographic Scaling — Log Alexa Rank · Employee midpoint mapping"]:::process
-        F3["🛠️ Quality Handling — Null sentinels · Median size imputation"]:::process
-        F4["🎯 Target Labeling — 90-day recency window to avoid mature bias"]:::process
-        A2 --> F1 & F2
-        F1 & F2 --> F3
-        F3 --> F4
+    %% ── 2. FEATURES ─────────────────────────────
+    subgraph FE ["② Feature Engineering"]
+        direction TB
+        F1["⏱️ Rolling Windows<br/>7d · 14d · 30d · 60d<br/>Actions & Unique Users<br/>per CRM Hub"]:::process
+        F2["🏭 Industry Mapping<br/>SIC codes → sectors<br/>Log Alexa Rank"]:::process
+        F3["🚫 Outlier Removal<br/>IQR clipping on<br/>usage features"]:::process
+        F4["🎯 Target Label<br/>90-day recency window<br/>avoids mature bias"]:::process
+        F1 & F2 & F3 --> F4
     end
 
-    %% ── BACKTESTING ────────────────────────────────────
-    subgraph BT ["③ Backtest · ×6 Monthly Folds · Feb–Jul 2020"]
-        B1["📅 Leakage-Safe Split — Sequential time-based validation"]:::process
-        B2["🔍 RFE Selection — Top 30 features per fold"]:::process
-        B3["🌲 Random Forest — 200 trees"]:::model
-        B4["⚡ LightGBM — 200 trees · lr 0.05"]:::model
-        B5["📐 Logistic Regression — L2 · balanced"]:::model
-        B6["🎯 Metamodel — Soft-Voting Ensemble"]:::ensemble
-        F4 --> B1
-        B1 --> B2
-        B2 --> B3 & B4 & B5
-        B3 & B4 & B5 --> B6
+    %% ── 3. MODELLING ────────────────────────────
+    subgraph BT ["③ Leakage-Safe Backtesting · ×6 Monthly Folds"]
+        direction TB
+        B1["📅 Sequential Split<br/>Feb – Jul 2020"]:::process
+        B2["🔍 RFE · Top 30 Features<br/>per fold"]:::process
+        B3["🌲 Random Forest"]:::model
+        B4["⚡ LightGBM"]:::model
+        B5["📐 Logistic Regression"]:::model
+        B6["🗳️ Soft-Voting Metamodel"]:::ensemble
+        B1 --> B2 --> B3 & B4 & B5 --> B6
     end
 
-    %% ── EVALUATION ─────────────────────────────────────
+    %% ── 4. EVALUATION ───────────────────────────
     subgraph EV ["④ Evaluation"]
-        C1["📊 Ranking Metrics — ROC-AUC 0.81 · PR-AUC · P@10 · R@10"]:::output
-        C2["📈 Baselines — Random · Activity Heuristic"]:::output
-        C3["🔔 Distribution Drift Check — PSI per fold"]:::output
+        direction TB
+        C1["📊 ROC-AUC 0.82 · PR-AUC 0.18<br/>P@10 0.23 · R@10 0.21"]:::output
+        C2["📉 PSI Drift Check<br/>per fold"]:::monitor
     end
 
-    %% ── EXPLAINABILITY ──────────────────────────────────
+    %% ── 5. EXPLAINABILITY ───────────────────────
     subgraph XP ["⑤ Explainability"]
-        D1["🔬 SHAP Values — computed per test company"]:::output
-        D2["📝 Top-3 Signals per lead — beeswarm · waterfall"]:::output
+        direction TB
+        D1["🔬 SHAP per Company<br/>Top-3 signals<br/>beeswarm · waterfall"]:::output
+        D2["🤖 GPT-4o-mini<br/>Sales Briefs"]:::output
         D1 --> D2
     end
 
-    %% ── SALES OUTPUT ────────────────────────────────────
-    subgraph SO ["⑥ Sales Output"]
-        E1["🤖 GPT-4o-mini Sales Briefs — llm_intelligence.py"]:::output
-        E2["🏆 Weekly Top-10 Lead List — CSV export"]:::report
-        E1 --> E2
+    %% ── 6. OUTPUT ───────────────────────────────
+    subgraph SO ["⑥ Weekly Output"]
+        direction TB
+        E1["🏆 Top-10 Lead List<br/>Every Sunday · CSV"]:::report
+        E2["📡 Monitoring Plan<br/>Drift · Conversion Rate<br/>Stability"]:::monitor
     end
 
-    %% ── MAIN FLOW ───────────────────────────────────────
-    ING --> FE
-    FE  --> BT
-    BT  --> EV
-    BT  --> XP
-    XP  --> SO
+    %% ── MAIN FLOW ───────────────────────────────
+    ING --> FE --> BT --> EV & XP
+    XP --> SO
+    EV --> SO
 ```
 
 
