@@ -28,21 +28,21 @@ flowchart TB
     %% ── 2. FEATURES ─────────────────────────────
     subgraph FE ["② Feature Engineering"]
         direction TB
-        F1["⏱️ Rolling Windows<br/>7d · 14d · 30d · 60d<br/>Actions & Unique Users<br/>per CRM Hub"]:::process
-        F2["🏭 Industry Mapping<br/>SIC codes → sectors<br/>Log Alexa Rank"]:::process
-        F3["🚫 Outlier Removal<br/>IQR clipping on<br/>usage features"]:::process
-        F4["🎯 Target Label<br/>90-day recency window<br/>avoids mature bias"]:::process
+        F1["⏱️ Rolling Windows<br/>7d · 14d · 30d · 60d<br/>Actions & Unique Users"]:::process
+        F2["🏭 Industry Mapping<br/>Log Alexa Rank<br/>Employee Range Avg"]:::process
+        F3["🚫 Outlier Removal<br/>Percentile clipping on<br/>usage features"]:::process
+        F4["🎯 Target Label<br/>30-day future positives<br/>Trained with all positive until then"]:::process
         F1 & F2 & F3 --> F4
     end
 
     %% ── 3. MODELLING ────────────────────────────
     subgraph BT ["③ Leakage-Safe Backtesting · ×6 Monthly Folds"]
         direction TB
-        B1["📅 Sequential Split<br/>Feb – Jul 2020"]:::process
-        B2["🔍 RFE · Top 30 Features<br/>per fold"]:::process
-        B3["🌲 Random Forest"]:::model
-        B4["⚡ LightGBM"]:::model
-        B5["📐 Logistic Regression"]:::model
+        B1["📅 Sequential Backtesting Split<br/>Feb – Jul 2020<br/>6 Cutoffs"]:::process
+        B2["🔍 Feature Selection (RFE) · Top 30 Features<br/>per fold"]:::process
+        B3["🌲 Random Forest<br/>class_weight='balanced'"]:::model
+        B4["⚡ LightGBM<br/>is_unbalance=True"]:::model
+        B5["📐 Logistic Regression<br/>class_weight='balanced'"]:::model
         B6["🗳️ Soft-Voting Metamodel"]:::ensemble
         B1 --> B2 --> B3 & B4 & B5 --> B6
     end
@@ -65,7 +65,7 @@ flowchart TB
     %% ── 6. OUTPUT ───────────────────────────────
     subgraph SO ["⑥ Weekly Output"]
         direction TB
-        E1["🏆 Top-10 Lead List<br/>Every Sunday · CSV"]:::report
+        E1["🏆 Top Lead List Sorted<br/>Every Sunday · CSV"]:::report
         E2["📡 Monitoring Plan<br/>Drift · Conversion Rate<br/>Stability"]:::monitor
     end
 
