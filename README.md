@@ -21,30 +21,29 @@ flowchart TB
     subgraph ING ["① Ingestion & EDA"]
         direction TB
         A1["📂 customers.csv · 200 records<br/>noncustomers.csv · 5k records<br/>usage_actions.csv · 25k events"]:::data
-        A2["🧹 Normalise · Parse Dates<br/>Null & Drift Analysis"]:::process
+        A2["🧹 Check Null · Parse Dates<br/>Variable Distribution Analysis"]:::process
         A1 --> A2
     end
 
     %% ── 2. FEATURES ─────────────────────────────
     subgraph FE ["② Feature Engineering"]
         direction TB
-        F1["⏱️ Rolling Windows<br/>7d · 14d · 30d · 60d<br/>Actions & Unique Users"]:::process
         F2["🏭 Industry Mapping<br/>Log Alexa Rank<br/>Employee Range Avg"]:::process
-        F3["🚫 Outlier Removal<br/>Percentile clipping on<br/>usage features"]:::process
-        F4["🎯 Target Label<br/>30-day future positives<br/>Trained with all positive until then"]:::process
-        F1 & F2 & F3 --> F4
+        F3["🚫 Outlier Removal<br/>99th Percentile clipping on<br/>usage features"]:::process
     end
 
     %% ── 3. MODELLING ────────────────────────────
     subgraph BT ["③ Leakage-Safe Backtesting · ×6 Monthly Folds"]
         direction TB
         B1["📅 Sequential Backtesting Split<br/>Feb – Jul 2020<br/>6 Cutoffs"]:::process
+        F1["⏱️ Rolling Windows<br/>7d · 14d · 30d · 60d<br/>Actions & Unique Users"]:::process
+        F4["🎯 Target Label<br/>30-day future positives<br/>Trained with all positive until then"]:::process
         B2["🔍 Feature Selection (RFE) · Top 30 Features<br/>per fold"]:::process
         B3["🌲 Random Forest<br/>class_weight='balanced'"]:::model
         B4["⚡ LightGBM<br/>is_unbalance=True"]:::model
         B5["📐 Logistic Regression<br/>class_weight='balanced'"]:::model
         B6["🗳️ Soft-Voting Metamodel"]:::ensemble
-        B1 --> B2 --> B3 & B4 & B5 --> B6
+        B1 --> F1 --> F4 --> B2 --> B3 & B4 & B5 --> B6
     end
 
     %% ── 4. EVALUATION ───────────────────────────
