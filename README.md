@@ -21,7 +21,7 @@ flowchart TB
     subgraph ING ["① Ingestion & EDA"]
         direction TB
         A1["📂 customers.csv · 200 records<br/>noncustomers.csv · 5k records<br/>usage_actions.csv · 25k events"]:::data
-        A2["🧹 Check Null · Parse Dates<br/>Variable Distribution Analysis"]:::process
+        A2["🧹 Check Null · Parse Dates<br/>Variable Distribution Analysis<br/>Coverage and Duplicates"]:::process
         A1 --> A2
     end
 
