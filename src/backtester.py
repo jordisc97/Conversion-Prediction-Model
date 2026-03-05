@@ -360,7 +360,7 @@ class PropensityBacktester(EvaluationMixin, ExplainabilityMixin):
         return self.metrics_results, final_lead_table
 
     def plot_results(self) -> None:
-        """Visualises ROC-AUC, Precision@K and Recall@K across all backtest folds."""
+        """Visualises PR AUC, Precision@K and Recall@K across all backtest folds."""
         if not self.metrics_results:
             logging.warning("No results to plot. Run run_backtest() first.")
             return
@@ -393,8 +393,8 @@ class PropensityBacktester(EvaluationMixin, ExplainabilityMixin):
 
         for ax, metric, title in zip(
             axes,
-            ["roc", "p_at_k", "rec_at_k"],
-            ["ROC-AUC", f"Precision @ {self.top_k}", f"Recall @ {self.top_k}"],
+            ["pr", "p_at_k", "rec_at_k"],
+            ["PR AUC", f"Precision @ {self.top_k}", f"Recall @ {self.top_k}"],
         ):
             for model in model_names:
                 data = df_plot[df_plot["model"] == model]
